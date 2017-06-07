@@ -1,0 +1,36 @@
+batch
+    // Counting will work fine for any column, since "count" just counts number of rows.
+    // So the column "process_name" itself is not important here.
+    |query('''
+        SELECT count("pid") as query_value
+        FROM "telegraf"."autogen"."procstat"
+    ''')
+        .period(2m)
+        .every(1m)
+        .fill('null')
+        .groupBy(time(1m), 'process_name', 'host')
+
+    |deadman(0.0, 1m)
+        // Alert title.
+        .id('Monitored processes - {{ index .Tags "process_name" }}')
+
+        // Alert body.
+        .message('Server:{{ index .Tags "host" }}|Process {{ index .Tags "process_name" }} STOPPED!')
+
+        // Send notification when state changes only.
+        .stateChangesOnly()
+
+        // Send alerts to Slack
+        .slack()
+        .channel('#devops')
+
+        // For Debugging purposes.
+        .log('/tmp/procscheck.log')
+    |alert()
+	// Alert title when httpd UP
+        .id('Monitored processes - {{ index .Tags "process_name" }}')
+
+        // Alert body.
+        .message('Server:{{ index .Tags "host" }}|Process {{ index .Tags "process_name" }} STARTED!')
+	.slack()
+	.channel('#devops')   
