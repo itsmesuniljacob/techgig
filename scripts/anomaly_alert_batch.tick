@@ -1,0 +1,25 @@
+// The minimum support
+var minSupport = 0.05
+
+// The error tolerance
+var errorTolerance = 0.01
+
+// The consensus
+var consensus = 0.5
+stream
+  |from()
+     .measurement('anomaly_cpu_idle')
+  | window()
+     .period(1m)
+     .every(1m)
+  @morgoth()
+     .field('usage_idle')
+     .minSupport(minSupport)
+     .errorTolerance(errorTolerance)
+     .consensus(consensus)
+     .scoreField('anomaly_score')
+     .sigma(3.5)
+  |alert()
+     .crit(lambda: "anomaly_score" > 0.9)
+     .slack()
+     .channel('#devops')   	

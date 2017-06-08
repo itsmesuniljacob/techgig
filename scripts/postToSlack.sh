@@ -1,34 +1,65 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Usage: slackpost "<webhook_url>" "<channel>" "<message>"
+function usage {
+    programName=$0
+    echo "description: use this program to post messages to Slack channel"
+    echo "usage: $programName [-t \"sample title\"] [-b \"message body\"] [-c \"mychannel\"] [-u \"slack url\"]"
+    echo "	-t    the title of the message you are posting"
+    echo "	-b    The message body"
+    echo "	-c    The channel you are posting to"
+    echo "	-u    The slack hook url to post to"
+    exit 1
+}
 
-webhook_url=$1
-if [[ $webhook_url == "" ]]
-then
-        echo "No webhook_url specified"
-        exit 1
+while getopts ":t:b:c:u:h" opt; do
+  case ${opt} in
+    t) msgTitle="$OPTARG"
+    ;;
+    u) slackUrl="$OPTARG"
+    ;;
+    b) msgBody="$OPTARG"
+    ;;
+    c) channelName="$OPTARG"
+    ;;
+    h) usage
+    ;;
+    \?) echo "Invalid option -$OPTARG" >&2
+    ;;
+  esac
+done
+
+if [[ ! "${msgTitle}" ||  ! "${slackUrl}" || ! "${msgBody}" || ! "${channelName}" ]]; then
+    echo "all arguments are required"
+    usage
 fi
 
-shift
-channel=$1
-if [[ $channel == "" ]]
-then
-        echo "No channel specified"
-        exit 1
-fi
+read -d '' payLoad << EOF
+{
+        "channel": "#${channelName}",
+        "username": "$(hostname)",
+        "icon_emoji": ":sunglasses:",
+        "attachments": [
+            {
+                "fallback": "${msgTitle}",
+                "color": "good",
+                "title": "${msgTitle}",
+                "fields": [{
+                    "title": "message",
+                    "value": "${msgBody}",
+                    "short": false
+                }]
+            }
+        ]
+    }
+EOF
 
-shift
 
-text=$*
+statusCode=$(curl \
+        --write-out %{http_code} \
+        --silent \
+        --output /dev/null \
+        -X POST \
+        -H 'Content-type: application/json' \
+        --data "${payLoad}" ${slackUrl})
 
-if [[ $text == "" ]]
-then
-        echo "No text specified"
-        exit 1
-fi
-
-escapedText=$(echo $text | sed 's/"/\"/g' | sed "s/'/\'/g" )
-json="{\"channel\": \"$channel\", \"text\": \"$escapedText\"}"
-
-statusCode=$(curl --write-out %{http_code} -s -d "payload=$json" "$webhook_url")
-echo $statusCode
+echo ${statusCode}

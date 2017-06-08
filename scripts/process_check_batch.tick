@@ -15,7 +15,7 @@ batch
         .id('Monitored processes - {{ index .Tags "process_name" }}')
 
         // Alert body.
-        .message('Server:{{ index .Tags "host" }}|Process {{ index .Tags "process_name" }} STOPPED!')
+        .message('Server:{{ index .Tags "host" }}|Process {{ index .Tags "process_name" }}  is {{ if eq .Level "OK" }}RUNNING{{ else }}STOPPED{{ end }} ')
 
         // Send notification when state changes only.
         .stateChangesOnly()
@@ -26,11 +26,3 @@ batch
 
         // For Debugging purposes.
         .log('/tmp/procscheck.log')
-    |alert()
-	// Alert title when httpd UP
-        .id('Monitored processes - {{ index .Tags "process_name" }}')
-
-        // Alert body.
-        .message('Server:{{ index .Tags "host" }}|Process {{ index .Tags "process_name" }} STARTED!')
-	.slack()
-	.channel('#devops')   

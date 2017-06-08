@@ -48,4 +48,4 @@ alert
         .log('/tmp/disk_alert_log.txt')
         .slack()
         .channel('#devops')
-        .exec('/bin/recover_disk.sh')
+        .exec('/usr/bin/python','/home/ec2-user/techgig/scripts/sample.py')
